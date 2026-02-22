@@ -1,0 +1,68 @@
+{
+  "movies": [
+    {
+      "folder_name": "philosophers_stone",
+      "title": "Harry Potter and the Philosopher's Stone",
+      "short_title": "Philosopher's Stone",
+      "year": 2001,
+      "part": 1,
+      "hashtag": "#PhilosophersStone"
+    },
+    {
+      "folder_name": "chamber_of_secrets",
+      "title": "Harry Potter and the Chamber of Secrets",
+      "short_title": "Chamber of Secrets",
+      "year": 2002,
+      "part": 2,
+      "hashtag": "#ChamberOfSecrets"
+    },
+    {
+      "folder_name": "prisoner_of_azkaban",
+      "title": "Harry Potter and the Prisoner of Azkaban",
+      "short_title": "Prisoner of Azkaban",
+      "year": 2004,
+      "part": 3,
+      "hashtag": "#PrisonerOfAzkaban"
+    },
+    {
+      "folder_name": "goblet_of_fire",
+      "title": "Harry Potter and the Goblet of Fire",
+      "short_title": "Goblet of Fire",
+      "year": 2005,
+      "part": 4,
+      "hashtag": "#GobletOfFire"
+    },
+    {
+      "folder_name": "order_of_the_phoenix",
+      "title": "Harry Potter and the Order of the Phoenix",
+      "short_title": "Order of the Phoenix",
+      "year": 2007,
+      "part": 5,
+      "hashtag": "#OrderOfThePhoenix"
+    },
+    {
+      "folder_name": "half_blood_prince",
+      "title": "Harry Potter and the Half-Blood Prince",
+      "short_title": "Half-Blood Prince",
+      "year": 2009,
+      "part": 6,
+      "hashtag": "#HalfBloodPrince"
+    },
+    {
+      "folder_name": "deathly_hallows_part1",
+      "title": "Harry Potter and the Deathly Hallows \u2013 Part 1",
+      "short_title": "Deathly Hallows Pt. 1",
+      "year": 2010,
+      "part": 7,
+      "hashtag": "#DeathlyHallows"
+    },
+    {
+      "folder_name": "deathly_hallows_part2",
+      "title": "Harry Potter and the Deathly Hallows \u2013 Part 2",
+      "short_title": "Deathly Hallows Pt. 2",
+      "year": 2011,
+      "part": 8,
+      "hashtag": "#DeathlyHallows"
+    }
+  ]
+}
