@@ -17,5 +17,5 @@ def generate(movie: Movie) -> tuple[str, list[str]]:
         Tuple of (caption_text, list_of_hashtags).
     """
     caption = f"{movie.title}"
-    hashtags = ["HarryPotter", movie.hashtag.lstrip("#")]
+    hashtags = ["HarryPotter"]
     return caption, hashtags
