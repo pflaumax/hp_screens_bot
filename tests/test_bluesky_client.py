@@ -115,10 +115,19 @@ class TestFailures:
         with pytest.raises(PostingError):
             client.post_with_image("Caption", ["HarryPotter"], image, "alt")
 
-    def test_missing_image_file_raises_posting_error(
+    def test_unreadable_image_raises_posting_error_not_oserror(
         self, client: BlueskyClient, tmp_path: Path
     ) -> None:
-        with pytest.raises((PostingError, OSError)):
+        """main.py falls back to text-only on PostingError alone."""
+        with pytest.raises(PostingError):
             client.post_with_image(
                 "Caption", ["HarryPotter"], tmp_path / "gone.jpg", "alt"
             )
+
+    def test_corrupt_image_raises_posting_error(
+        self, client: BlueskyClient, tmp_path: Path
+    ) -> None:
+        path = tmp_path / "corrupt.jpg"
+        path.write_bytes(b"\xff\xd8\xff\xe0 truncated")
+        with pytest.raises(PostingError):
+            client.post_with_image("Caption", ["HarryPotter"], path, "alt")

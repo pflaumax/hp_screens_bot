@@ -63,6 +63,41 @@ class TestPostHistory:
         assert len(raw["posted"]) == PostHistory.MAX_ENTRIES
         assert history.posted_fact_ids() == {"spells_alohomora"}
 
+    def test_records_when_the_bot_first_ran(
+        self, history: PostHistory
+    ) -> None:
+        history.mark_started()
+        first = history.get_stats()["bot_started"]
+        assert first is not None
+        history.mark_started()
+        assert history.get_stats()["bot_started"] == first  # not overwritten
+
+    @pytest.mark.parametrize(
+        "contents",
+        [
+            "{}",
+            '{"posted": []}',
+            '{"stats": {}}',
+            '{"posted": null, "stats": null}',
+            "[1, 2, 3]",
+            "not json at all",
+        ],
+        ids=["empty", "no-stats", "no-posted", "nulls", "array", "garbage"],
+    )
+    def test_malformed_file_never_crashes_the_boot_path(
+        self, tmp_path: Path, contents: str
+    ) -> None:
+        """A bad history file under systemd would become a restart loop."""
+        path = tmp_path / "posted_frames.json"
+        path.write_text(contents)
+        history = PostHistory(path)
+
+        # Everything main() touches at startup must work.
+        assert history.get_stats()["total_posts"] is not None
+        assert history.posted_fact_ids() == set()
+        assert history.is_posted("anything.jpg") is False
+        history.mark_started()
+
     def test_reads_a_legacy_file_without_the_fact_key(
         self, tmp_path: Path
     ) -> None:

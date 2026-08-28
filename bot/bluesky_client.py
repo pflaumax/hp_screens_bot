@@ -100,9 +100,14 @@ class BlueskyClient:
             PostingError: If all retries are exhausted.
         """
         # Read the dimensions from the file actually being uploaded, so
-        # the declared ratio cannot drift from the bytes.
-        with Image.open(image_path) as img:
-            width, height = img.size
+        # the declared ratio cannot drift from the bytes. Wrapped because
+        # main.py only falls back to a text-only post on PostingError; a
+        # bare OSError here would skip the fallback and lose the cycle.
+        try:
+            with Image.open(image_path) as img:
+                width, height = img.size
+        except OSError as exc:
+            raise PostingError(f"Cannot read {image_path}: {exc}") from exc
 
         def _do_post() -> str:
             # Build full text with hashtags

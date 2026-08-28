@@ -164,7 +164,7 @@ wording before anything goes live.
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 
-pytest tests/ -q      # 149 tests
+pytest tests/ -q      # 179 tests
 ruff check .          # lint
 ```
 

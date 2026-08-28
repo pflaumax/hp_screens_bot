@@ -36,23 +36,37 @@ class PostHistory:
         self._data = self._load()
 
     def _load(self) -> dict:
-        """Load history from disk, or return empty structure."""
+        """Load history from disk, normalised so every key is present.
+
+        The file predates several of these keys and is hand-editable, so
+        a missing one must not be able to crash the bot at boot — under
+        systemd that turns into a restart loop.
+        """
+        data: dict = {}
         if self._path.exists():
             try:
                 with open(self._path, encoding="utf-8") as f:
-                    return json.load(f)
+                    loaded = json.load(f)
+                if isinstance(loaded, dict):
+                    data = loaded
+                else:
+                    logger.warning("Post history is not an object; ignoring it.")
             except (json.JSONDecodeError, OSError) as exc:
                 logger.warning("Could not load post history: %s", exc)
-        return {
-            "posted": [],
-            "posted_fact_ids": [],
-            "stats": {
-                "total_posts": 0,
-                "by_part": {},
-                "last_post": None,
-                "bot_started": datetime.now(timezone.utc).isoformat(),
-            },
-        }
+
+        if not isinstance(data.get("posted"), list):
+            data["posted"] = []
+        if not isinstance(data.get("posted_fact_ids"), list):
+            data["posted_fact_ids"] = []
+
+        stats = data.get("stats")
+        if not isinstance(stats, dict):
+            stats = {}
+        stats.setdefault("total_posts", len(data["posted"]))
+        stats.setdefault("by_part", {})
+        stats.setdefault("last_post", None)
+        data["stats"] = stats
+        return data
 
     def _save(self) -> None:
         """Atomically write history to disk."""
@@ -112,6 +126,14 @@ class PostHistory:
             entry.get("frame_filename") == frame_filename
             for entry in self._data["posted"]
         )
+
+    def mark_started(self) -> None:
+        """Record when the bot first ran, if it has not been recorded yet."""
+        if self._data["stats"].get("bot_started") is None:
+            self._data["stats"]["bot_started"] = datetime.now(
+                timezone.utc
+            ).isoformat()
+            self._save()
 
     def posted_fact_ids(self) -> set[str]:
         """Return every fact ID posted so far."""
@@ -257,13 +279,7 @@ def main() -> None:
     bluesky_client = BlueskyClient(cfg.bluesky_username, cfg.bluesky_password)
     bluesky_client.login()
 
-    # Set bot_started if not already set
-    stats = post_history.get_stats()
-    if stats.get("bot_started") is None:
-        post_history._data["stats"]["bot_started"] = (
-            datetime.now(timezone.utc).isoformat()
-        )
-        post_history._save()
+    post_history.mark_started()
 
     # Log library stats
     lib_stats = movie_library.get_stats()

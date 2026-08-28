@@ -15,7 +15,7 @@ The venv is `.venv/` (the README's `venv/` refers to the Pi deploy). Dev tools l
 A virtualenv hardcodes its own absolute path, so **moving the project breaks it**: `activate` puts a non-existent directory on `PATH` and `python3` silently resolves to the system interpreter, where the dependencies are missing — which reads as random `ModuleNotFoundError`s. This already happened once when the project moved under `pi-services/`. The fix is to delete `.venv` and recreate it, not to work around it.
 
 ```bash
-.venv/bin/python -m pytest tests/ -q          # full suite (149 tests, all passing)
+.venv/bin/python -m pytest tests/ -q          # full suite (179 tests, all passing)
 .venv/bin/python -m ruff check .               # lint (clean)
 .venv/bin/python -m pytest tests/test_fact_fetcher.py::TestQualityFilters -v   # one class
 .venv/bin/python main.py                      # run the bot (posts immediately, then every INTERVAL_MINUTES)
@@ -79,6 +79,15 @@ Facts are drawn independently of the frame, so **the fact does not relate to the
 `fact_formatter.clean_field()` is the shared sanitiser and the reason the gate and the formatter agree. It drops hedged values (`"Pure-blood or half-blood"`), placeholders (`"Non-corporeal"`, `"None"` — 134 of ~200 Patronus entries), overlong text, and trailing parentheticals. `GENERIC_BOGGARTS` exists because the wiki lists Voldemort as the boggart of 68 of the ~100 characters that have one; posting it would repeat the same sentence endlessly.
 
 Character phrasings are **weighted**, not uniform: boggart/Patronus/Animagus at 10, wand/species at 3, house/blood status at 1. Nearly every documented character has a house, so an even draw made the feed almost entirely "X was sorted into Y".
+
+### Boot must not be able to loop
+
+The systemd unit is `Restart=always`, so anything that raises before the scheduler starts becomes a restart loop rather than a visible failure. Two inputs are attacker-free but human-editable, and both are normalised rather than trusted:
+
+- `PostHistory._load()` guarantees the shape of `posted_frames.json`. The file predates several of its keys and is hand-editable; a missing `stats` or `posted` used to raise `KeyError` from `main()`.
+- `config._number_env()` reports a bad `.env` value and exits 1, matching the missing-credentials path. A typo in `FRAME_CANDIDATES` used to be a raw `ValueError`.
+
+`tests/test_config.py` and `TestPostHistory.test_malformed_file_never_crashes_the_boot_path` cover both.
 
 ### Dedup ledgers
 
