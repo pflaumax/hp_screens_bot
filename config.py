@@ -30,6 +30,10 @@ class Config:
     # Scheduling
     interval_minutes: int = 30
 
+    # Facts (Potter DB)
+    facts_enabled: bool = True
+    max_fact_length: int = 180
+
     # Logging
     log_level: str = "INFO"
 
@@ -60,5 +64,8 @@ def load_config() -> Config:
         data_dir=Path(os.getenv("DATA_DIR", "data/")),
         log_dir=Path(os.getenv("LOG_DIR", "logs/")),
         interval_minutes=int(os.getenv("INTERVAL_MINUTES", "30")),
+        facts_enabled=os.getenv("FACTS_ENABLED", "true").strip().lower()
+        not in ("0", "false", "no"),
+        max_fact_length=int(os.getenv("MAX_FACT_LENGTH", "180")),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )

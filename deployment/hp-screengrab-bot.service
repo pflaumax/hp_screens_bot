@@ -5,15 +5,15 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/harry-potter-screengrab-bot
-Environment="PATH=/home/pi/harry-potter-screengrab-bot/venv/bin"
-EnvironmentFile=/home/pi/harry-potter-screengrab-bot/.env
-ExecStart=/home/pi/harry-potter-screengrab-bot/venv/bin/python main.py
+User=reiberry
+WorkingDirectory=/home/reiberry/personal/hp_screens_bot
+Environment="PATH=/home/reiberry/personal/hp_screens_bot/venv/bin"
+EnvironmentFile=/home/reiberry/personal/hp_screens_bot/.env
+ExecStart=/home/reiberry/personal/hp_screens_bot/venv/bin/python main.py
 Restart=always
 RestartSec=15
-StandardOutput=append:/home/pi/harry-potter-screengrab-bot/logs/systemd.log
-StandardError=append:/home/pi/harry-potter-screengrab-bot/logs/systemd-error.log
+StandardOutput=append:/home/reiberry/personal/hp_screens_bot/logs/systemd.log
+StandardError=append:/home/reiberry/personal/hp_screens_bot/logs/systemd-error.log
 
 [Install]
 WantedBy=multi-user.target

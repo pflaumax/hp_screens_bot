@@ -109,3 +109,54 @@ def small_frame(tmp_path: Path) -> Path:
     path = tmp_path / "small.jpg"
     img.save(path, "JPEG")
     return path
+
+
+@pytest.fixture
+def sample_spell() -> dict:
+    """A Potter DB spell item that passes the quality filter."""
+    return {
+        "id": "spell-1",
+        "attributes": {
+            "slug": "alohomora",
+            "name": "Alohomora",
+            "category": "Charm",
+            "effect": "Unlocked doors and other locked objects",
+            "incantation": "Alohomora(ah-LOH-ha-MOR-ah)",
+            "image": "https://example.invalid/alohomora.jpg",
+            "wiki": "https://example.invalid/wiki/Alohomora",
+        },
+    }
+
+
+@pytest.fixture
+def sample_potion() -> dict:
+    """A Potter DB potion item that passes the quality filter."""
+    return {
+        "id": "potion-1",
+        "attributes": {
+            "slug": "amortentia",
+            "name": "Amortentia",
+            "effect": "Caused a powerful infatuation in the drinker",
+            "characteristics": "Mother-of-pearl sheen, spiralling steam",
+        },
+    }
+
+
+@pytest.fixture
+def sample_character() -> dict:
+    """A Potter DB character with a distinctive signature field."""
+    return {
+        "id": "char-1",
+        "attributes": {
+            "slug": "harry-potter",
+            "name": "Harry James Potter",
+            "house": "Gryffindor",
+            "patronus": "Stag",
+            "boggart": "Dementor",
+            "wand": "Holly, phoenix feather, 11\"",
+            "species": "Human",
+            "blood_status": "Half-blood",
+            "image": "https://example.invalid/harry.jpg",
+            "wiki": "https://example.invalid/wiki/Harry_Potter",
+        },
+    }

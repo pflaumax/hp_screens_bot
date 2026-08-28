@@ -2,8 +2,9 @@
 # Automated Raspberry Pi setup for the Harry Potter Screengrab Bot.
 set -euo pipefail
 
-BOT_DIR="/home/pi/harry-potter-screengrab-bot"
-SERVICE_NAME="hp-screengrab-bot"
+BOT_DIR="/home/reiberry/personal/hp_screens_bot"
+# Legacy unit name — the live service predates the repo rename.
+SERVICE_NAME="hp-bot"
 
 echo "=== Harry Potter Screengrab Bot — Raspberry Pi Setup ==="
 
@@ -49,7 +50,8 @@ EOF
 
 # 6. Systemd service
 echo "[6/6] Installing systemd service..."
-sudo cp "$BOT_DIR/deployment/$SERVICE_NAME.service" "/etc/systemd/system/"
+sudo cp "$BOT_DIR/deployment/hp-screengrab-bot.service" \
+    "/etc/systemd/system/$SERVICE_NAME.service"
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME.service"
 
@@ -57,7 +59,7 @@ echo ""
 echo "=== Setup complete ==="
 echo "Next steps:"
 echo "  1. Edit your credentials:  nano $BOT_DIR/.env"
-echo "  2. Mount your screenshots at: /mnt/hp_screenshots"
+echo "  2. Put your screenshots in: $BOT_DIR/screenshots"
 echo "  3. Start the bot:          sudo systemctl start $SERVICE_NAME"
 echo "  4. Check status:           sudo systemctl status $SERVICE_NAME"
 echo "  5. View logs:              tail -f $BOT_DIR/logs/bot.log"

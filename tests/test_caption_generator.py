@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from bot.caption_generator import generate
+from bot.caption_generator import BLUESKY_CHAR_LIMIT, fact_budget, generate
 from bot.movie_library import Movie
 
 ALL_MOVIES = [
@@ -53,23 +53,39 @@ class TestCaptionGenerator:
         full_text = caption + "\n\n" + " ".join(f"#{tag}" for tag in hashtags)
         assert len(full_text) <= 300
 
-    def test_format_contains_title_and_year(
-        self, sample_movie: Movie
-    ) -> None:
-        """Caption should contain the movie title and year."""
-        caption, hashtags = generate(sample_movie)
-        assert sample_movie.title in caption
-        assert str(sample_movie.year) in caption
+    def test_title_only_without_a_fact(self, sample_movie: Movie) -> None:
+        """With no fact, the caption is exactly the movie title."""
+        caption, _ = generate(sample_movie)
+        assert caption == sample_movie.title
 
-    def test_hashtags_present(self, sample_movie: Movie) -> None:
-        """Caption must always include HarryPotter and movie hashtag."""
-        caption, hashtags = generate(sample_movie)
-        assert "HarryPotter" in hashtags
-        assert sample_movie.hashtag.lstrip("#") in hashtags
-        assert "WizardingWorld" in hashtags
+    def test_fact_sits_above_the_title(self, sample_movie: Movie) -> None:
+        """A fact is placed above the title, separated by a blank line."""
+        caption, _ = generate(sample_movie, "Alohomora unlocked doors.")
+        assert caption == (
+            f"Alohomora unlocked doors.\n\n{sample_movie.title}"
+        )
+
+    def test_single_hashtag(self, sample_movie: Movie) -> None:
+        """Exactly one tag — the extra per-movie tags were dropped."""
+        _, hashtags = generate(sample_movie, "Alohomora unlocked doors.")
+        assert hashtags == ["HarryPotter"]
 
     @pytest.mark.parametrize("movie", ALL_MOVIES, ids=lambda m: m.short_title)
     def test_caption_has_no_timestamp_line(self, movie: Movie) -> None:
         """Ensure no HH:MM:SS pattern in caption after refactor."""
         caption, hashtags = generate(movie)
         assert not re.search(r"\d{2}:\d{2}:\d{2}", caption)
+
+    @pytest.mark.parametrize("movie", ALL_MOVIES, ids=lambda m: m.short_title)
+    def test_budget_fact_always_fits_the_limit(self, movie: Movie) -> None:
+        """A fact filling the whole budget still leaves the post under 300."""
+        budget = fact_budget(movie, max_fact_length=1000)
+        assert budget > 0
+        caption, hashtags = generate(movie, "x" * budget)
+        full_text = caption + "\n" + " ".join(f"#{tag}" for tag in hashtags)
+        assert len(full_text) == BLUESKY_CHAR_LIMIT
+
+    @pytest.mark.parametrize("movie", ALL_MOVIES, ids=lambda m: m.short_title)
+    def test_budget_respects_the_configured_cap(self, movie: Movie) -> None:
+        """The short-fact cap wins when it is tighter than the hard limit."""
+        assert fact_budget(movie, max_fact_length=80) == 80

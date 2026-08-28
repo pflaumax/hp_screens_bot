@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import load_config
 from bot.bluesky_client import BlueskyClient
+from bot.fact_fetcher import FactFetcher
 from bot.image_processor import ImageProcessor
 from bot.movie_library import MovieLibrary
 from bot.utils import setup_logging
@@ -31,6 +32,9 @@ def main() -> None:
     )
     image_processor = ImageProcessor()
     post_history = PostHistory(cfg.data_dir / "posted_frames.json")
+    fact_fetcher = (
+        FactFetcher(cfg.data_dir / "cache") if cfg.facts_enabled else None
+    )
 
     bluesky_client = BlueskyClient(cfg.bluesky_username, cfg.bluesky_password)
     bluesky_client.login()
@@ -42,6 +46,8 @@ def main() -> None:
         bluesky_client=bluesky_client,
         post_history=post_history,
         temp_dir=Path("temp/"),
+        fact_fetcher=fact_fetcher,
+        max_fact_length=cfg.max_fact_length,
     )
     print("Done.")
 

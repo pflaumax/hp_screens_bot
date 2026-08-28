@@ -16,6 +16,7 @@ venv/
 temp/
 logs/
 data/posted_frames.json
+data/cache/
 
 # Movies (too large for git)
 movies/

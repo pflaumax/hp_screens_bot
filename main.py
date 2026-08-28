@@ -14,7 +14,8 @@ from pathlib import Path
 from config import load_config
 
 from bot.bluesky_client import BlueskyClient, PostingError
-from bot.caption_generator import generate as generate_caption
+from bot.caption_generator import fact_budget, generate as generate_caption
+from bot.fact_fetcher import Fact, FactFetcher
 from bot.image_processor import ImageProcessor, ImageProcessingError
 from bot.movie_library import MovieLibrary, FrameResult
 from bot.scheduler import BotScheduler
@@ -42,6 +43,7 @@ class PostHistory:
                 logger.warning("Could not load post history: %s", exc)
         return {
             "posted": [],
+            "posted_fact_ids": [],
             "stats": {
                 "total_posts": 0,
                 "by_part": {},
@@ -57,12 +59,18 @@ class PostHistory:
             json.dump(self._data, f, indent=2)
         tmp_path.rename(self._path)
 
-    def add(self, frame_result: FrameResult, uri: str) -> None:
-        """Record a posted frame.
+    def add(
+        self,
+        frame_result: FrameResult,
+        uri: str,
+        fact: Fact | None = None,
+    ) -> None:
+        """Record a posted frame and, if one was used, its fact.
 
         Args:
             frame_result: The posted FrameResult.
             uri: Bluesky post URI.
+            fact: The Fact included in the caption, if any.
         """
         now = datetime.now(timezone.utc).isoformat()
         self._data["posted"].append({
@@ -70,7 +78,15 @@ class PostHistory:
             "frame_filename": frame_result.frame_filename,
             "posted_at": now,
             "bluesky_uri": uri,
+            "fact_id": fact.fact_id if fact else None,
         })
+
+        if fact is not None:
+            # Kept outside the ring buffer: fact IDs are small and the
+            # pool must not recycle just because the frame log rolled over.
+            fact_ids = self._data.setdefault("posted_fact_ids", [])
+            if fact.fact_id not in fact_ids:
+                fact_ids.append(fact.fact_id)
         # Trim to ring buffer size
         self._data["posted"] = self._data["posted"][-self.MAX_ENTRIES:]
 
@@ -95,6 +111,10 @@ class PostHistory:
             for entry in self._data["posted"]
         )
 
+    def posted_fact_ids(self) -> set[str]:
+        """Return every fact ID posted so far."""
+        return set(self._data.get("posted_fact_ids", []))
+
     def get_stats(self) -> dict:
         """Return posting statistics."""
         return self._data["stats"]
@@ -109,11 +129,14 @@ def post_random_frame(
     bluesky_client: BlueskyClient,
     post_history: PostHistory,
     temp_dir: Path,
+    fact_fetcher: FactFetcher | None = None,
+    max_fact_length: int = 180,
 ) -> None:
     """Execute one full post cycle.
 
-    Picks a random screenshot, compresses it, and posts to Bluesky.
-    All errors are caught and logged — the scheduler must never crash.
+    Picks a random screenshot, compresses it, looks up a Potter DB fact,
+    and posts to Bluesky. All errors are caught and logged — the
+    scheduler must never crash.
     """
     processed_path: Path | None = None
     try:
@@ -149,8 +172,19 @@ def post_random_frame(
         processed_path = temp_dir / f"processed_{frame_result.frame_filename}"
         image_processor.prepare(frame_result.frame_path, processed_path)
 
+        # Look up a fact for the caption. Best effort: the Potter DB
+        # lookup must never stop a screengrab from going out.
+        fact: Fact | None = None
+        if fact_fetcher is not None:
+            budget = fact_budget(movie, max_fact_length)
+            if budget > 0:
+                fact = fact_fetcher.get_random_fact(
+                    exclude_ids=post_history.posted_fact_ids(),
+                    max_length=budget,
+                )
+
         # Generate caption and alt text
-        caption, hashtags = generate_caption(movie)
+        caption, hashtags = generate_caption(movie, fact.text if fact else None)
         alt_text = f"Scene from {movie.title} ({movie.year})"
 
         # Post to Bluesky
@@ -172,7 +206,7 @@ def post_random_frame(
                 )
                 return
 
-        post_history.add(frame_result, uri)
+        post_history.add(frame_result, uri, fact)
         logger.info(
             "Posted: %s [%s] → %s",
             movie.title, frame_result.frame_filename, uri,
@@ -209,6 +243,13 @@ def main() -> None:
     post_history = PostHistory(cfg.data_dir / "posted_frames.json")
     temp_dir = Path("temp/")
 
+    fact_fetcher: FactFetcher | None = None
+    if cfg.facts_enabled:
+        fact_fetcher = FactFetcher(cfg.data_dir / "cache")
+        logger.info("Facts enabled (max %d chars).", cfg.max_fact_length)
+    else:
+        logger.info("Facts disabled — posting title only.")
+
     bluesky_client = BlueskyClient(cfg.bluesky_username, cfg.bluesky_password)
     bluesky_client.login()
 
@@ -237,6 +278,8 @@ def main() -> None:
             bluesky_client=bluesky_client,
             post_history=post_history,
             temp_dir=temp_dir,
+            fact_fetcher=fact_fetcher,
+            max_fact_length=cfg.max_fact_length,
         )
 
     # Run one post immediately on startup

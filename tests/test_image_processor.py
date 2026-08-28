@@ -22,15 +22,14 @@ class TestImageProcessor:
         img = Image.open(output)
         assert max(img.size) <= MAX_DIMENSION
 
-    def test_already_small_unchanged(
+    def test_small_widescreen_cropped_not_upscaled(
         self, small_frame: Path, tmp_path: Path
     ) -> None:
-        """An 800px image should not be upscaled."""
+        """An 800x450 frame is centre-cropped to 450x450, never upscaled."""
         output = tmp_path / "out.jpg"
         self.processor.prepare(small_frame, output)
         img = Image.open(output)
-        assert img.size[0] == 800
-        assert img.size[1] == 450
+        assert img.size == (450, 450)
 
     def test_compressed_under_1mb(
         self, large_frame: Path, tmp_path: Path
@@ -40,13 +39,19 @@ class TestImageProcessor:
         self.processor.prepare(large_frame, output)
         assert output.stat().st_size <= MAX_BYTES
 
-    def test_aspect_ratio_preserved(
+    def test_widescreen_cropped_to_square(
         self, large_frame: Path, tmp_path: Path
     ) -> None:
-        """Aspect ratio should be maintained after resize."""
+        """A 16:9 frame is centre-cropped to 1:1 for the Bluesky feed."""
         output = tmp_path / "out.jpg"
         self.processor.prepare(large_frame, output)
         img = Image.open(output)
-        # 3840x2160 = 16:9 → resized should still be ~16:9
-        ratio = img.size[0] / img.size[1]
-        assert abs(ratio - (16 / 9)) < 0.05
+        assert img.size[0] == img.size[1]
+
+    def test_near_square_left_uncropped(self, tmp_path: Path) -> None:
+        """Frames under the 1.2:1 threshold keep their aspect ratio."""
+        source = tmp_path / "near_square.jpg"
+        Image.new("RGB", (900, 800), color=(10, 20, 30)).save(source, "JPEG")
+        output = tmp_path / "out.jpg"
+        self.processor.prepare(source, output)
+        assert Image.open(output).size == (900, 800)
