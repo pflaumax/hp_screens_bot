@@ -71,6 +71,29 @@ class TestSpellsAndPotions:
         sample_spell["attributes"]["effect"] = ""
         assert format_fact(sample_spell["attributes"], "spells") is None
 
+    def test_wiki_list_capitals_are_lowered(self) -> None:
+        """Potter DB capitalises every comma-separated entry."""
+        attrs = {
+            "name": "Amortentia",
+            "characteristics": (
+                "Mother-of-pearl sheen, Spiralling steam, Scent was varied"
+            ),
+        }
+        assert format_fact(attrs, "potions") == (
+            "Amortentia — mother-of-pearl sheen, spiralling steam, "
+            "scent was varied."
+        )
+
+    def test_proper_names_keep_their_capitals(self) -> None:
+        """A capital followed by another capital is treated as a name."""
+        attrs = {
+            "name": "Oculus Potion",
+            "effect": "Restored sight, Counteracted the Conjunctivitis Curse",
+        }
+        text = format_fact(attrs, "potions")
+        assert text is not None and "Conjunctivitis Curse" in text
+        assert "counteracted the" in text
+
     def test_potion_falls_back_to_characteristics(
         self, sample_potion: dict
     ) -> None:

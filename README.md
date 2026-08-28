@@ -12,7 +12,7 @@ ledger, and one post format.
 1. Picks a random Harry Potter movie from pre-downloaded screenshot folders
 2. Draws candidate JPEGs, skipping broken and near-black frames and
    preferring one with a face in it
-3. Resizes, centre-crops to 1:1, and compresses to meet Bluesky's image limits
+3. Centre-crops to 4:3 and compresses to meet Bluesky's image limits
 4. Looks up a short fact from the [Potter DB API](https://potterdb.com/)
 5. Posts the fact above the film title, with a single #HarryPotter tag
 
@@ -28,6 +28,27 @@ Harry Potter and the Deathly Hallows – Part 2
 The fact is decoration, not a dependency: if Potter DB is unreachable the
 screengrab still goes out with just the title. Facts are deliberately plain —
 no emoji, no extra hashtags, one sentence.
+
+### A note on image sharpness
+
+The source library is 2.40:1 cinemascope (1920x800). Posting that
+untouched gives a letterbox sliver, so frames are centre-cropped.
+
+How *wide* that crop is turns out to set how sharp the post looks. Feeds
+fit an image to the column width, so the crop's width in pixels is what
+matters, and the source height caps it at 800:
+
+| Crop | Output | Frame kept | Phone stretch |
+|---|---|---|---|
+| 1:1 | 800x800 | 42% | 1.46x |
+| 5:4 | 1000x800 | 52% | 1.17x |
+| **4:3** | **1067x800** | **56%** | **1.10x** |
+| 3:2 | 1200x800 | 63% | none |
+
+Squarer means softer — the opposite of the intuition. JPEG settings are
+not the lever here: re-encoding at quality 95 costs an RMSE of about 0.35
+on a 0-255 scale and lands near 100KB against a ~1MB limit, so there is
+byte budget to spare and nothing to gain by spending it.
 
 ### A note on frame quality
 
@@ -120,6 +141,7 @@ All settings are in `.env`:
 | `MAX_FACT_LENGTH` | `180` | Character cap on the fact line |
 | `FRAME_QUALITY_ENABLED` | `true` | Set to `false` to post any frame |
 | `FRAME_CANDIDATES` | `3` | Frames inspected while looking for a face |
+| `IMAGE_ASPECT_RATIO` | `1.3333` | Centre-crop width:height (4:3) |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
 
 ## Scripts

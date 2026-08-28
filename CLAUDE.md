@@ -36,7 +36,7 @@ There is no pyproject/pytest.ini/mypy config — always run from the repo root s
 - **`bot/frame_quality.py`** — `FrameScorer.assess()`: Pillow exposure guards, then OpenCV YuNet face detection. OpenCV and the model are both optional; either missing degrades to the guards alone.
 - **`bot/frame_selector.py`** — draws candidates, skips unusable ones, prefers a face, falls back to the best seen. Returns None when nothing is usable, and the cycle is skipped.
 - **`bot/movie_library.py`** — reads `data/movie_metadata.json` and globs `SCREENSHOTS_DIR/<folder_name>/*.jpg` **once at construction**. Adding screenshots on disk requires a restart. Missing/empty folders log a warning and are skipped.
-- **`bot/image_processor.py`** — centre-crops to 1:1 when aspect > 1.2, resizes longest side to ≤1000px, then steps JPEG quality 95→15 until under 950KB.
+- **`bot/image_processor.py`** — centre-crops to `IMAGE_ASPECT_RATIO` (default 4:3), resizes longest side to ≤2000px, then steps JPEG quality 95→15 at 4:4:4 chroma until under 950KB.
 - **`bot/fact_fetcher.py`** — Potter DB client: paginated fetch, disk cache, quality gates, weighted draw. Returns a formatted `Fact` or `None`.
 - **`bot/fact_formatter.py`** — turns one Potter DB item into one plain sentence. Owns the house style.
 - **`bot/caption_generator.py`** — assembles `fact\n\n{title}`, and `fact_budget()` computes how many characters a fact may use.
@@ -82,6 +82,16 @@ Character phrasings are **weighted**, not uniform: boggart/Patronus/Animagus at 
 - `posted_fact_ids` — an **unbounded** list, deliberately outside the ring buffer so the fact pool doesn't recycle merely because the frame log rolled over. Files written before facts existed lack this key; `posted_fact_ids()` and `add()` both tolerate that.
 
 Fact IDs are `f"{content_type}_{slug}"`. Changing that format silently invalidates the whole fact history. When every quality fact has been posted, `FactFetcher` recycles rather than returning nothing — at 48 posts/day the pool is expected to wrap around, and this is the intended behaviour, not a bug.
+
+### Image sharpness is set by the crop ratio, not the encoder
+
+Sources are uniformly 1920x800 (2.40:1). Feeds fit an image to the column width, so the crop's **width in pixels** decides sharpness, and the source height caps it at 800. A 1:1 crop is 800px wide and a phone stretches it ~1.46x; 4:3 is 1067px and stretches ~1.10x. **Squarer is softer** — counterintuitive, and the reason the default moved off 1:1.
+
+Do not look for wins in the encoder. Measured on real frames, re-encoding at quality 95 costs an RMSE of ~0.35 on a 0-255 scale, and output lands at 50-115KB against the 950KB cap — the quality ladder essentially never steps down. Chroma is set to 4:4:4 because the budget is there, not because it was a problem.
+
+`MAX_DIMENSION` is 2000, not 1000: at 4:3 a downscale would otherwise trigger on any source taller than 750px and silently undo the crop's gain.
+
+Bluesky serves back exactly what is uploaded (verified: an 800x800 upload came back 800x800), so there is no server-side resampling to lean on.
 
 ### Frame quality, and what does not work
 

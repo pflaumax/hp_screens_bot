@@ -231,17 +231,32 @@ def clean_field(value: object) -> str:
 
 
 def _sentence(text: str) -> str:
-    """Lowercase the lead-in and guarantee a terminating period."""
-    text = _decapitalize(text)
+    """Read a wiki field as prose and guarantee a terminating period.
+
+    Potter DB stores effects and characteristics as comma-separated lists
+    with every entry capitalised — "Mother-of-pearl sheen, Spiralling
+    steam, Scent was multi-faceted". Mid-sentence capitals read as a
+    database dump, so each segment is lowered in turn.
+    """
+    text = ", ".join(_decapitalize(part.strip()) for part in text.split(","))
     return text if text.endswith((".", "!", "?")) else f"{text}."
 
 
 def _decapitalize(text: str) -> str:
-    """Lowercase the first character unless the leading word is an acronym."""
+    """Lowercase the first character, unless it starts a name.
+
+    Two things are left alone: acronyms, and a capitalised word directly
+    followed by another ("Harry Potter"), which is almost always a proper
+    name. A single-word name at the head of a segment will still be
+    lowered — rare enough to accept, and far milder than the capitals it
+    replaces.
+    """
     if not text:
         return text
-    first_word = text.split(" ", 1)[0]
-    if first_word.isupper():
+    words = text.split(" ", 2)
+    if words[0].isupper():
+        return text
+    if len(words) > 1 and words[1][:1].isupper():
         return text
     return text[0].lower() + text[1:]
 

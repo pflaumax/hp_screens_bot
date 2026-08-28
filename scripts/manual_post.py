@@ -31,7 +31,7 @@ def main() -> None:
     movie_library = MovieLibrary(
         cfg.screenshots_dir, cfg.data_dir / "movie_metadata.json"
     )
-    image_processor = ImageProcessor()
+    image_processor = ImageProcessor(cfg.image_aspect_ratio)
     post_history = PostHistory(cfg.data_dir / "posted_frames.json")
     fact_fetcher = (
         FactFetcher(cfg.data_dir / "cache") if cfg.facts_enabled else None

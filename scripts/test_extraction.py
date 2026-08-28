@@ -39,7 +39,7 @@ def main() -> None:
     temp_dir.mkdir(parents=True, exist_ok=True)
     output = temp_dir / f"test_processed_{result.frame_filename}"
 
-    processor = ImageProcessor()
+    processor = ImageProcessor(cfg.image_aspect_ratio)
     processor.prepare(result.frame_path, output)
     size_kb = output.stat().st_size // 1024
     print(f"Processed → {output} ({size_kb}KB)")

@@ -232,7 +232,7 @@ def main() -> None:
         logger.error("No movies found in %s. Exiting.", cfg.screenshots_dir)
         sys.exit(1)
 
-    image_processor = ImageProcessor()
+    image_processor = ImageProcessor(cfg.image_aspect_ratio)
     post_history = PostHistory(cfg.data_dir / "posted_frames.json")
     temp_dir = Path("temp/")
 
