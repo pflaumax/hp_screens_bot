@@ -116,6 +116,7 @@ class TestPostCycle:
         tmp_path: Path,
         fetcher: object | None,
         scorer: object | None = None,
+        candidates: int = 2,
     ) -> tuple[_FakeClient, PostHistory]:
         from bot.image_processor import ImageProcessor
 
@@ -129,6 +130,7 @@ class TestPostCycle:
             temp_dir=tmp_path / "temp",
             fact_fetcher=fetcher,  # type: ignore[arg-type]
             frame_scorer=scorer,  # type: ignore[arg-type]
+            frame_candidates=candidates,
         )
         return client, history
 
@@ -198,7 +200,7 @@ class TestPostCycle:
 
         scorer = _FaceOnThirdLook()
         client, history = self._run(
-            screenshots_dir, metadata_path, tmp_path, None, scorer
+            screenshots_dir, metadata_path, tmp_path, None, scorer, candidates=3
         )
         assert len(client.captions) == 1
         assert len(scorer.seen) == 3

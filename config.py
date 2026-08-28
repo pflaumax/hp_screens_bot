@@ -36,7 +36,7 @@ class Config:
 
     # Frame quality
     frame_quality_enabled: bool = True
-    frame_candidates: int = 3
+    frame_candidates: int = 2
 
     # Image crop: width:height of the centre crop
     image_aspect_ratio: float = 4 / 3
@@ -78,7 +78,7 @@ def load_config() -> Config:
         .strip()
         .lower()
         not in ("0", "false", "no"),
-        frame_candidates=int(os.getenv("FRAME_CANDIDATES", "3")),
+        frame_candidates=int(os.getenv("FRAME_CANDIDATES", "2")),
         image_aspect_ratio=float(os.getenv("IMAGE_ASPECT_RATIO", "1.3333")),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )

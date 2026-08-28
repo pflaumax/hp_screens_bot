@@ -16,9 +16,10 @@ from bot.movie_library import FrameResult, MovieLibrary
 
 logger = logging.getLogger("hp_bot.frame_selector")
 
-# Candidates to look at hoping for a face. With ~65% of the library
-# carrying one, three draws leave roughly 4% of posts faceless.
-PREFERRED_ATTEMPTS = 3
+# Candidates to look at hoping for a face. With ~63% of the library
+# carrying one, two draws leave roughly 14% of posts faceless, which is
+# the point — it lets wide shots and scenery back into the feed.
+PREFERRED_ATTEMPTS = 2
 
 # Hard ceiling on draws, so a run of unreadable or already-posted frames
 # cannot spin. Only unreadable/near-black/duplicate draws consume it

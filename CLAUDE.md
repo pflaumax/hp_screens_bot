@@ -19,6 +19,7 @@ The venv is `.venv/` and was created before the project moved under `pi-services
 
 .venv/bin/python scripts/preview_facts.py 20  # print sample captions, post nothing
 .venv/bin/python scripts/calibrate_quality.py 500  # measure the frame filter
+.venv/bin/python scripts/health_check.py      # config, library, model, credentials
 .venv/bin/python scripts/test_extraction.py   # dry run: pick + process a frame
 .venv/bin/python scripts/manual_post.py       # one real post to Bluesky
 .venv/bin/python scripts/stats.py             # read data/posted_frames.json
@@ -104,7 +105,7 @@ The library is a fixed-interval sample of each film, so it is full of fades, blu
 
 The exposure guards that remain are only for frames that are *never* postable: unreadable files (~0.3% of the library — these used to cost a whole post cycle) and near-black fades (brightness < 10 or contrast < 6).
 
-Faces are preferred, not required: a wide shot of the castle is a legitimate screengrab that YuNet cannot see a face in. `FRAME_CANDIDATES` (default 3) is the knob — the chance of a faceless post is roughly `0.35 ** FRAME_CANDIDATES`.
+Faces are preferred, not required: a wide shot of the castle is a legitimate screengrab that YuNet cannot see a face in. `FRAME_CANDIDATES` (default 2) is the knob — the chance of a faceless post is roughly `0.37 ** FRAME_CANDIDATES`, so 2 gives ~14% and 3 gives ~5%.
 
 The model is vendored at `models/face_detection_yunet_2023mar.onnx` (227 KB) so deployment needs no download. `opencv-python-headless` installs on the Pi in about 8 seconds; note OpenCV 5 dropped `CascadeClassifier` and the bundled Haar cascades, so `FaceDetectorYN` is the path.
 

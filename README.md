@@ -61,9 +61,9 @@ close-ups of texture. Two filters apply:
 - **Preferred**: frames with a detectable face. About 65% of the library
   has one, spread evenly across all eight films.
 
-Faces are preferred rather than required. At `FRAME_CANDIDATES=3` roughly
-96% of posts show a character while atmospheric wide shots still get
-through. Raise it to make the feed stricter, or set
+Faces are preferred rather than required. At `FRAME_CANDIDATES=2` roughly
+86% of posts show a character, leaving room for wide shots and scenery.
+Raise it to make the feed stricter (3 gives ~95%), or set
 `FRAME_QUALITY_ENABLED=false` to turn all of this off.
 
 Brightness and contrast are deliberately *not* used to judge interest.
@@ -140,13 +140,14 @@ All settings are in `.env`:
 | `FACTS_ENABLED` | `true` | Set to `false` to post the title only |
 | `MAX_FACT_LENGTH` | `180` | Character cap on the fact line |
 | `FRAME_QUALITY_ENABLED` | `true` | Set to `false` to post any frame |
-| `FRAME_CANDIDATES` | `3` | Frames inspected while looking for a face |
+| `FRAME_CANDIDATES` | `2` | Frames inspected while looking for a face |
 | `IMAGE_ASPECT_RATIO` | `1.3333` | Centre-crop width:height (4:3) |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
 
 ## Scripts
 
 ```bash
+python scripts/health_check.py          # Verify config, library, model, credentials
 python scripts/preview_facts.py 20     # Print sample captions, post nothing
 python scripts/calibrate_quality.py 500 # Measure the frame filter, post nothing
 python scripts/manual_post.py       # Post once immediately

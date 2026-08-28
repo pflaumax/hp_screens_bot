@@ -76,7 +76,9 @@ class TestSelection:
     def test_keeps_looking_past_a_faceless_frame(self) -> None:
         library = _FakeLibrary(["a.jpg", "b.jpg", "c.jpg"])
         scorer = _FakeScorer({"a.jpg": NO_FACE, "b.jpg": NO_FACE, "c.jpg": FACE})
-        selection = select_frame(library, _never_posted, scorer)  # type: ignore[arg-type]
+        selection = select_frame(
+            library, _never_posted, scorer, preferred_attempts=3  # type: ignore[arg-type]
+        )
         assert selection is not None
         assert selection.frame.frame_filename == "c.jpg"
         assert selection.assessment.has_face

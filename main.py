@@ -131,7 +131,7 @@ def post_random_frame(
     fact_fetcher: FactFetcher | None = None,
     max_fact_length: int = 180,
     frame_scorer: FrameScorer | None = None,
-    frame_candidates: int = 3,
+    frame_candidates: int = 2,
 ) -> None:
     """Execute one full post cycle.
 
