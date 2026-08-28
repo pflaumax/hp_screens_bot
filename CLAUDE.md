@@ -13,7 +13,7 @@ This repo absorbed a second project, `../hp_facts_bot`, which was configured for
 The venv is `.venv/` and was created before the project moved under `pi-services/`, so `.venv/bin/pip` has a stale shebang and fails. Use `.venv/bin/python -m pip` instead, or recreate the venv. (The README's `venv/` refers to the Pi deploy.)
 
 ```bash
-.venv/bin/python -m pytest tests/ -q          # full suite (133 tests, all passing)
+.venv/bin/python -m pytest tests/ -q          # full suite (149 tests, all passing)
 .venv/bin/python -m pytest tests/test_fact_fetcher.py::TestQualityFilters -v   # one class
 .venv/bin/python main.py                      # run the bot (posts immediately, then every INTERVAL_MINUTES)
 
@@ -40,7 +40,9 @@ There is no pyproject/pytest.ini/mypy config — always run from the repo root s
 - **`bot/fact_fetcher.py`** — Potter DB client: paginated fetch, disk cache, quality gates, weighted draw. Returns a formatted `Fact` or `None`.
 - **`bot/fact_formatter.py`** — turns one Potter DB item into one plain sentence. Owns the house style.
 - **`bot/caption_generator.py`** — assembles `fact\n\n{title}`, and `fact_budget()` computes how many characters a fact may use.
-- **`bot/bluesky_client.py`** — atproto wrapper. `_build_facets()` hand-computes UTF-8 byte offsets so the hashtag is clickable; it assumes the exact layout `f"{caption}\n{tags}"`. Change the caption shape and the facet math must change with it.
+- **`bot/bluesky_client.py`** — atproto wrapper. Two things here are easy to break silently, and `tests/test_bluesky_client.py` pins both:
+  - `_build_facets()` hand-computes UTF-8 byte offsets so the hashtag is clickable, assuming the exact layout `f"{caption}\n{tags}"`. Change the caption shape and the facet math must change with it. Facts contain em dashes (3 bytes), so character offsets are not interchangeable with byte offsets.
+  - `image_aspect_ratio` **must** be passed to `send_image`. Without it the Bluesky client cannot size the container before the blob loads and letterboxes the image inside a default one — visible as bars around the post. Dimensions are read from the file being uploaded so the declared ratio cannot drift from the bytes.
 - **`bot/scheduler.py`** — APScheduler `BackgroundScheduler` (UTC), `coalesce=True`, `max_instances=1`, 300s misfire grace, so a sleeping Pi or a slow post won't pile up jobs.
 
 ### Post cycle invariants
@@ -91,7 +93,7 @@ Do not look for wins in the encoder. Measured on real frames, re-encoding at qua
 
 `MAX_DIMENSION` is 2000, not 1000: at 4:3 a downscale would otherwise trigger on any source taller than 750px and silently undo the crop's gain.
 
-Bluesky serves back exactly what is uploaded (verified: an 800x800 upload came back 800x800), so there is no server-side resampling to lean on.
+Bluesky serves back exactly what is uploaded (verified: an 800x800 upload came back 800x800), so there is no server-side resampling to lean on. The embed must also declare `aspectRatio` — see `bot/bluesky_client.py` — or the post renders with bars whatever the crop.
 
 ### Frame quality, and what does not work
 
@@ -136,4 +138,4 @@ Deploy is `git pull` + `sudo systemctl restart hp-bot.service`. Restarting posts
 
 ## Tests
 
-Fixtures in `tests/conftest.py` synthesize screenshot folders, metadata, and Potter DB items. Nothing touches the network or Bluesky: `FactFetcher._fetch_all` is stubbed, and `tests/test_post_history.py` drives the real `post_random_frame()` against fake client and fetcher objects. There is no test for `bluesky_client.py`.
+Fixtures in `tests/conftest.py` synthesize screenshot folders, metadata, and Potter DB items. Nothing touches the network or Bluesky: `FactFetcher._fetch_all` is stubbed, `tests/test_bluesky_client.py` swaps in a recording stand-in for the atproto `Client`, and `tests/test_post_history.py` drives the real `post_random_frame()` against fake client and fetcher objects.

@@ -7,6 +7,7 @@ with exponential backoff on transient failures.
 import logging
 from pathlib import Path
 
+from PIL import Image
 from atproto import Client, models
 
 from bot.utils import retry_with_backoff
@@ -98,6 +99,11 @@ class BlueskyClient:
         Raises:
             PostingError: If all retries are exhausted.
         """
+        # Read the dimensions from the file actually being uploaded, so
+        # the declared ratio cannot drift from the bytes.
+        with Image.open(image_path) as img:
+            width, height = img.size
+
         def _do_post() -> str:
             # Build full text with hashtags
             hashtag_text = " ".join(f"#{tag}" for tag in hashtags)
@@ -115,6 +121,12 @@ class BlueskyClient:
                 image=image_data,
                 image_alt=alt_text,
                 facets=facets,
+                # Without this the client cannot size the container
+                # before the blob loads, and letterboxes the image
+                # inside a default one — visible as bars around the post.
+                image_aspect_ratio=models.AppBskyEmbedDefs.AspectRatio(
+                    width=width, height=height
+                ),
             )
             return response.uri
 
