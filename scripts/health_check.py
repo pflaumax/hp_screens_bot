@@ -15,10 +15,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import load_config
 from bot.fact_fetcher import FactFetcher
 from bot.frame_quality import FrameScorer
 from bot.movie_library import MovieLibrary
+from config import load_config
 
 
 def _report(label: str, ok: bool, detail: str) -> bool:
@@ -30,7 +30,9 @@ def _report(label: str, ok: bool, detail: str) -> bool:
 def check_screenshots(cfg) -> bool:
     """The screenshot library scans and has frames in every folder."""
     try:
-        library = MovieLibrary(cfg.screenshots_dir, cfg.data_dir / "movie_metadata.json")
+        library = MovieLibrary(
+            cfg.screenshots_dir, cfg.data_dir / "movie_metadata.json"
+        )
     except OSError as exc:
         return _report("screenshots", False, str(exc))
 

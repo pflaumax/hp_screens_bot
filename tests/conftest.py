@@ -1,11 +1,12 @@
 """Pytest fixtures and sample data for bot tests."""
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 from PIL import Image
 
-from bot.movie_library import Movie, FrameResult
+from bot.movie_library import FrameResult, Movie
 
 
 @pytest.fixture

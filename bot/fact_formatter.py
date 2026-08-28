@@ -12,7 +12,6 @@ which tells :mod:`bot.fact_fetcher` to move on to the next candidate.
 
 import random
 import re
-from datetime import date
 
 # Potter DB fields are free text from a wiki. Anything longer than this
 # is a paragraph, not a fact.
@@ -148,7 +147,11 @@ def _format_character(attrs: dict) -> str | None:
     animagus = clean_choice_field(attrs.get("animagus"))
     if animagus:
         options.append(
-            (10, f"{name} was an Animagus who could become {_with_article(animagus)}.")
+            (
+                10,
+                f"{name} was an Animagus who could become "
+                f"{_with_article(animagus)}.",
+            )
         )
 
     offer(3, "wand", "{name}'s wand was {value}.")  # e.g. "Vine, 10¾\""
@@ -187,7 +190,9 @@ def _format_spell(attrs: dict) -> str | None:
 def _format_potion(attrs: dict) -> str | None:
     """Format a potion, appending side effects when there is room."""
     name = clean_field(attrs.get("name"))
-    effect = clean_field(attrs.get("effect")) or clean_field(attrs.get("characteristics"))
+    effect = clean_field(attrs.get("effect")) or clean_field(
+        attrs.get("characteristics")
+    )
     if not name or not effect:
         return None
 

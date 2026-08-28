@@ -2,10 +2,10 @@
 
 import logging
 import time
-from functools import wraps
+from collections.abc import Callable
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Callable, TypeVar
+from typing import TypeVar
 
 T = TypeVar("T")
 

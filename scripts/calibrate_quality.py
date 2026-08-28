@@ -17,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import load_config
 from bot.frame_quality import FrameScorer
 from bot.movie_library import MovieLibrary
+from config import load_config
 
 
 def main() -> None:

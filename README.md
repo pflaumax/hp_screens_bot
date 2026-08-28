@@ -158,12 +158,24 @@ python scripts/stats.py             # View posting statistics
 `preview_facts.py` needs no screenshots on disk — use it to judge fact
 wording before anything goes live.
 
-## Testing
+## Development
 
 ```bash
-pip install pytest
-pytest tests/ -v
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+
+pytest tests/ -q      # 149 tests
+ruff check .          # lint
 ```
+
+A virtualenv stores its own absolute path, so **moving the project breaks
+an existing venv**: `activate` puts a directory that no longer exists on
+`PATH` and `python3` silently falls back to the system interpreter, where
+the dependencies are missing. If imports vanish for no reason, delete
+`.venv` and recreate it.
+
+Note `ruff format` is deliberately not used — it would reformat most of
+the tree for no benefit.
 
 ## Raspberry Pi Deployment
 

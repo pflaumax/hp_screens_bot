@@ -11,17 +11,17 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from config import load_config
-
 from bot.bluesky_client import BlueskyClient, PostingError
-from bot.caption_generator import fact_budget, generate as generate_caption
+from bot.caption_generator import fact_budget
+from bot.caption_generator import generate as generate_caption
 from bot.fact_fetcher import Fact, FactFetcher
 from bot.frame_quality import FrameScorer
 from bot.frame_selector import select_frame
-from bot.image_processor import ImageProcessor, ImageProcessingError
-from bot.movie_library import MovieLibrary, FrameResult
+from bot.image_processor import ImageProcessor
+from bot.movie_library import FrameResult, MovieLibrary
 from bot.scheduler import BotScheduler
 from bot.utils import cleanup_temp_files, setup_logging
+from config import load_config
 
 logger = logging.getLogger("hp_bot.main")
 
@@ -39,7 +39,7 @@ class PostHistory:
         """Load history from disk, or return empty structure."""
         if self._path.exists():
             try:
-                with open(self._path, "r", encoding="utf-8") as f:
+                with open(self._path, encoding="utf-8") as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as exc:
                 logger.warning("Could not load post history: %s", exc)
@@ -206,7 +206,7 @@ def post_random_frame(
         )
 
     except Exception as exc:
-        logger.error("Unexpected error in post cycle: %s", exc, exc_info=True)
+        logger.exception("Unexpected error in post cycle: %s", exc)
     finally:
         if processed_path:
             cleanup_temp_files(processed_path)

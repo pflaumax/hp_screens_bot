@@ -1,0 +1,32 @@
+# Ruff config lives here rather than in pyproject.toml on purpose: the
+# project has no packaging metadata, and pytest relies on discovering the
+# repo root through tests/__init__.py. Adding a pyproject.toml would
+# change that discovery for no benefit.
+
+line-length = 88
+target-version = "py310"
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import sorting
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "G",    # logging format
+    "EXE",  # shebang/executable-bit agreement
+    "RUF",
+]
+
+ignore = [
+    # Three call sites catch bare Exception deliberately, and the design
+    # depends on it: post_random_frame() must never let the scheduler
+    # thread die, FactFetcher must degrade to "no fact" rather than cost
+    # a post, and FrameScorer must degrade to "no face". Each is
+    # commented at the site.
+    "BLE001",
+]
+
+[lint.per-file-ignores]
+# Tests reach into private state on purpose to assert what was persisted.
+"tests/*" = ["SLF001"]

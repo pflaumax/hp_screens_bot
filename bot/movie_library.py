@@ -54,7 +54,7 @@ class MovieLibrary:
 
     def _scan(self) -> None:
         """Load metadata and cache frame file lists per movie."""
-        with open(self._metadata_path, "r", encoding="utf-8") as f:
+        with open(self._metadata_path, encoding="utf-8") as f:
             metadata = json.load(f)
 
         for entry in metadata["movies"]:

@@ -10,10 +10,13 @@ This repo absorbed a second project, `../hp_facts_bot`, which was configured for
 
 ## Commands
 
-The venv is `.venv/` and was created before the project moved under `pi-services/`, so `.venv/bin/pip` has a stale shebang and fails. Use `.venv/bin/python -m pip` instead, or recreate the venv. (The README's `venv/` refers to the Pi deploy.)
+The venv is `.venv/` (the README's `venv/` refers to the Pi deploy). Dev tools live in `requirements-dev.txt`, not `requirements.txt`.
+
+A virtualenv hardcodes its own absolute path, so **moving the project breaks it**: `activate` puts a non-existent directory on `PATH` and `python3` silently resolves to the system interpreter, where the dependencies are missing — which reads as random `ModuleNotFoundError`s. This already happened once when the project moved under `pi-services/`. The fix is to delete `.venv` and recreate it, not to work around it.
 
 ```bash
 .venv/bin/python -m pytest tests/ -q          # full suite (149 tests, all passing)
+.venv/bin/python -m ruff check .               # lint (clean)
 .venv/bin/python -m pytest tests/test_fact_fetcher.py::TestQualityFilters -v   # one class
 .venv/bin/python main.py                      # run the bot (posts immediately, then every INTERVAL_MINUTES)
 
@@ -27,7 +30,7 @@ The venv is `.venv/` and was created before the project moved under `pi-services
 
 `preview_facts.py` is the fastest way to judge a change to fact wording or filtering — it renders the exact post text and needs neither screenshots nor credentials.
 
-There is no pyproject/pytest.ini/mypy config — always run from the repo root so `bot/`, `config.py`, and `main.py` are importable. `tests/` is a package (`__init__.py`), so pytest puts the root on `sys.path`.
+Lint config is in `ruff.toml`; `BLE001` is ignored there because three bare `except Exception` handlers are load-bearing (see the post-cycle invariants below). `ruff format` is deliberately unused — it would churn most of the tree. There is no pyproject/pytest.ini/mypy config — `ruff.toml` rather than `pyproject.toml` keeps pytest's rootdir discovery untouched. Always run from the repo root so `bot/`, `config.py`, and `main.py` are importable. `tests/` is a package (`__init__.py`), so pytest puts the root on `sys.path`.
 
 ## Architecture
 

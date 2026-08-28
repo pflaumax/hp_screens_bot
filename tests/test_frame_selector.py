@@ -12,7 +12,7 @@ from PIL import Image
 
 from bot.frame_quality import FrameAssessment, FrameScorer
 from bot.frame_selector import select_frame
-from bot.movie_library import FrameResult, Movie, MovieLibrary
+from bot.movie_library import FrameResult, Movie
 
 MOVIE = Movie(
     folder_name="philosophers_stone",

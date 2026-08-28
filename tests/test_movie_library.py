@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from bot.movie_library import MovieLibrary, FrameResult
+from bot.movie_library import FrameResult, MovieLibrary
 
 
 class TestMovieLibrary:
@@ -72,7 +72,7 @@ class TestMovieLibrary:
         """get_stats() returns accurate frame counts per part."""
         lib = MovieLibrary(screenshots_dir, metadata_path)
         stats = lib.get_stats()
-        assert stats["total_frames"] == 30  # 3 movies × 10 frames
+        assert stats["total_frames"] == 30  # 3 movies x 10 frames
         assert stats["by_part"][1] == 10
         assert stats["by_part"][2] == 10
         assert stats["by_part"][3] == 10

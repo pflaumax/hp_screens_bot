@@ -73,7 +73,7 @@ class TestCaptionGenerator:
     @pytest.mark.parametrize("movie", ALL_MOVIES, ids=lambda m: m.short_title)
     def test_caption_has_no_timestamp_line(self, movie: Movie) -> None:
         """Ensure no HH:MM:SS pattern in caption after refactor."""
-        caption, hashtags = generate(movie)
+        caption, _ = generate(movie)
         assert not re.search(r"\d{2}:\d{2}:\d{2}", caption)
 
     @pytest.mark.parametrize("movie", ALL_MOVIES, ids=lambda m: m.short_title)

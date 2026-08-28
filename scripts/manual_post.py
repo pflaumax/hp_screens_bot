@@ -11,13 +11,13 @@ from pathlib import Path
 # Allow running from project root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import load_config
 from bot.bluesky_client import BlueskyClient
 from bot.fact_fetcher import FactFetcher
 from bot.frame_quality import FrameScorer
 from bot.image_processor import ImageProcessor
 from bot.movie_library import MovieLibrary
 from bot.utils import setup_logging
+from config import load_config
 from main import PostHistory, post_random_frame
 
 

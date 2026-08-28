@@ -30,7 +30,7 @@ def main() -> None:
         print("No post history found.")
         return
 
-    with open(HISTORY_PATH, "r", encoding="utf-8") as f:
+    with open(HISTORY_PATH, encoding="utf-8") as f:
         data = json.load(f)
 
     stats = data.get("stats", {})
@@ -50,7 +50,7 @@ def main() -> None:
 
     posted = data.get("posted", [])
     if posted:
-        print(f"\nRecent posts (last 5):")
+        print("\nRecent posts (last 5):")
         for entry in posted[-5:]:
             name = MOVIE_NAMES.get(str(entry["movie_part"]), "?")
             filename = entry.get("frame_filename", "unknown")

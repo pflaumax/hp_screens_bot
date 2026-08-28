@@ -7,8 +7,8 @@ with exponential backoff on transient failures.
 import logging
 from pathlib import Path
 
-from PIL import Image
 from atproto import Client, models
+from PIL import Image
 
 from bot.utils import retry_with_backoff
 

@@ -8,8 +8,8 @@ fades) are skipped whatever the budget.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from bot.frame_quality import FrameAssessment, FrameScorer
 from bot.movie_library import FrameResult, MovieLibrary

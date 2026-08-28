@@ -1,0 +1,4 @@
+# Development-only. Runtime deps are in requirements.txt.
+#   python -m pip install -r requirements-dev.txt
+pytest>=8.0.0
+ruff>=0.16.0
