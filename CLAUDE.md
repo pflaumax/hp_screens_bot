@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Bluesky bot that posts a random Harry Potter screengrab on a fixed interval (default 30 min), captioned with a short Potter DB fact above the film title. It does **not** extract frames from video — it picks a random JPEG from pre-downloaded screenshot folders (movie-screencaps.com), compresses it for Bluesky, and posts it. Target deployment is a Raspberry Pi under systemd.
+A Bluesky bot that posts a random Harry Potter screengrab on a fixed interval (default 30 min), captioned with the film title. An optional Potter DB fact can be prepended; it is **switched off in the live deployment** (`FACTS_ENABLED=false`), but the code and its tests are kept so it is a one-line `.env` change to bring back. It does **not** extract frames from video — it picks a random JPEG from pre-downloaded screenshot folders (movie-screencaps.com), compresses it for Bluesky, and posts it. Target deployment is a Raspberry Pi under systemd.
 
 This repo absorbed a second project, `../hp_facts_bot`, which was configured for the **same** Bluesky account (`dailypotter.bsky.social`). That project was never deployed to the Pi; it is now superseded and its code lives on here as `bot/fact_fetcher.py` and `bot/fact_formatter.py`.
 

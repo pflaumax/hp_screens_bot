@@ -1,7 +1,7 @@
 # Harry Potter Random Movie Screengrab Bot
 
 A Bluesky bot that posts random screengrabs from the Harry Potter film series
-every 30 minutes, each captioned with a short Wizarding World fact.
+every 30 minutes.
 
 This project absorbed the separate `hp_facts_bot` project, which was
 configured for the same Bluesky account. There is now one service, one post
@@ -13,10 +13,16 @@ ledger, and one post format.
 2. Draws candidate JPEGs, skipping broken and near-black frames and
    preferring one with a face in it
 3. Centre-crops to 4:3 and compresses to meet Bluesky's image limits
-4. Looks up a short fact from the [Potter DB API](https://potterdb.com/)
-5. Posts the fact above the film title, with a single #HarryPotter tag
+4. Posts it with the film title and a single #HarryPotter tag
 
 A post looks like this:
+
+```
+Harry Potter and the Deathly Hallows – Part 2
+#HarryPotter
+```
+
+With `FACTS_ENABLED=true` a one-sentence Potter DB fact is prepended:
 
 ```
 Alohomora (Charm) — unlocked doors and other locked objects.
@@ -72,6 +78,9 @@ close-up of Harry's face and a close-up of a mosaic floor fall in the
 same bands — see `scripts/calibrate_quality.py`.
 
 ### A note on the facts
+
+Facts are currently **off** (`FACTS_ENABLED=false`). The machinery is kept
+and tested, so turning them back on is one line in `.env` plus a restart.
 
 Facts are drawn independently of the frame, so the fact will not relate to the
 scene on screen. Potter DB's `movies` and `books` collections are excluded for
@@ -137,7 +146,7 @@ All settings are in `.env`:
 | `BLUESKY_PASSWORD` | (required) | App password from Bluesky settings |
 | `SCREENSHOTS_DIR` | `/mnt/hp_screenshots` | Directory containing screenshot folders |
 | `INTERVAL_MINUTES` | `30` | Minutes between posts |
-| `FACTS_ENABLED` | `true` | Set to `false` to post the title only |
+| `FACTS_ENABLED` | `false` | Set to `true` to prepend a Potter DB fact |
 | `MAX_FACT_LENGTH` | `180` | Character cap on the fact line |
 | `FRAME_QUALITY_ENABLED` | `true` | Set to `false` to post any frame |
 | `FRAME_CANDIDATES` | `2` | Frames inspected while looking for a face |
