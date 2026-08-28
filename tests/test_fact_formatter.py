@@ -5,6 +5,7 @@ import pytest
 from bot.fact_formatter import (
     GENERIC_BOGGARTS,
     character_signature,
+    clean_choice_field,
     clean_field,
     format_fact,
 )
@@ -188,3 +189,31 @@ class TestCleanField:
 
     def test_generic_boggarts_are_lowercase_for_comparison(self) -> None:
         assert all(value == value.lower() for value in GENERIC_BOGGARTS)
+
+
+class TestCleanChoiceField:
+    """Fields where the wiki crams several alternatives into one value."""
+
+    def test_takes_the_first_alternative(self) -> None:
+        assert clean_choice_field("Rat, Rattlesnake, Bloody eyeball") == "Rat"
+
+    def test_drops_a_mid_string_aside(self) -> None:
+        assert (
+            clean_choice_field("Dragon (formerly), His mother being a criminal")
+            == "Dragon"
+        )
+
+    def test_leaves_a_plain_value_alone(self) -> None:
+        assert clean_choice_field("Dementor") == "Dementor"
+
+    def test_still_rejects_placeholders(self) -> None:
+        assert clean_choice_field("Non-corporeal") == ""
+
+    def test_multi_value_boggart_is_phrased_as_one_thing(self) -> None:
+        attrs = {
+            "name": "Daniel Page",
+            "boggart": "Dragon (formerly), His mother being a criminal",
+        }
+        assert format_fact(attrs, "characters") == (
+            "Daniel Page's boggart took the form of a Dragon."
+        )

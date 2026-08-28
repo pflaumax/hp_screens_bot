@@ -22,6 +22,9 @@ MAX_FIELD_LENGTH = 160
 # e.g. "Alarte Ascendare(a-LAR-tay a-SEN-der-ay)".
 _PRONUNCIATION = re.compile(r"\s*\([^)]*\)\s*$")
 
+# Any parenthetical aside, wherever it sits: "Dragon (formerly)".
+_PARENTHETICAL = re.compile(r"\s*\([^)]*\)")
+
 _VOWELS = "aeioAEIO"
 
 # The wiki hedges when a detail is disputed ("pure-blood or half-blood",
@@ -45,6 +48,27 @@ GENERIC_BOGGARTS = frozenset({"lord voldemort", "voldemort"})
 SIGNATURE_FIELDS = ("boggart", "patronus", "animagus")
 
 
+def clean_choice_field(value: object) -> str:
+    """Clean a field where the wiki lists several alternatives at once.
+
+    Boggart, Patronus and Animagus entries are frequently a
+    comma-separated list carrying wiki asides — "Dragon (formerly), His
+    mother being a criminal", "Rat, Rattlesnake, Bloody eyeball". Only
+    the first alternative is worth stating, and the asides are noise.
+
+    Args:
+        value: Raw field value from the API.
+
+    Returns:
+        The first alternative, or "" if the value is unusable.
+    """
+    text = clean_field(value)
+    if not text:
+        return ""
+    text = _PARENTHETICAL.sub("", text)
+    return text.split(",", 1)[0].strip()
+
+
 def character_signature(attrs: dict) -> str:
     """Return the first distinctive field a character actually has.
 
@@ -59,7 +83,7 @@ def character_signature(attrs: dict) -> str:
         A field name from ``SIGNATURE_FIELDS``, or "" if none qualifies.
     """
     for field in SIGNATURE_FIELDS:
-        value = clean_field(attrs.get(field))
+        value = clean_choice_field(attrs.get(field))
         if not value:
             continue
         if field == "boggart" and value.lower() in GENERIC_BOGGARTS:
@@ -109,19 +133,19 @@ def _format_character(attrs: dict) -> str | None:
         if value:
             options.append((weight, template.format(name=name, value=value)))
 
-    boggart = clean_field(attrs.get("boggart"))
+    boggart = clean_choice_field(attrs.get("boggart"))
     if boggart and boggart.lower() not in GENERIC_BOGGARTS:
         options.append(
             (10, f"{name}'s boggart took the form of {_with_article(boggart)}.")
         )
 
-    patronus = clean_field(attrs.get("patronus"))
+    patronus = clean_choice_field(attrs.get("patronus"))
     if patronus:
         options.append(
             (10, f"{name}'s Patronus took the form of {_with_article(patronus)}.")
         )
 
-    animagus = clean_field(attrs.get("animagus"))
+    animagus = clean_choice_field(attrs.get("animagus"))
     if animagus:
         options.append(
             (10, f"{name} was an Animagus who could become {_with_article(animagus)}.")
@@ -129,13 +153,13 @@ def _format_character(attrs: dict) -> str | None:
 
     offer(3, "wand", "{name}'s wand was {value}.")  # e.g. "Vine, 10¾\""
 
-    species = clean_field(attrs.get("species"))
+    species = clean_choice_field(attrs.get("species"))
     if species and species.lower() != "human":
         options.append((3, f"{name} was {_with_article(_decapitalize(species))}."))
 
     offer(1, "house", "{name} was sorted into {value}.")
 
-    blood = clean_field(attrs.get("blood_status"))
+    blood = clean_choice_field(attrs.get("blood_status"))
     if blood:
         options.append((1, f"{name} was {_with_article(_decapitalize(blood))}."))
 
