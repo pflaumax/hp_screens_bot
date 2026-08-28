@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from bot.fact_fetcher import Fact
+from bot.frame_quality import FrameAssessment
 from bot.movie_library import FrameResult, MovieLibrary
 from main import PostHistory, post_random_frame
 
@@ -114,6 +115,7 @@ class TestPostCycle:
         metadata_path: Path,
         tmp_path: Path,
         fetcher: object | None,
+        scorer: object | None = None,
     ) -> tuple[_FakeClient, PostHistory]:
         from bot.image_processor import ImageProcessor
 
@@ -126,6 +128,7 @@ class TestPostCycle:
             post_history=history,
             temp_dir=tmp_path / "temp",
             fact_fetcher=fetcher,  # type: ignore[arg-type]
+            frame_scorer=scorer,  # type: ignore[arg-type]
         )
         return client, history
 
@@ -164,6 +167,42 @@ class TestPostCycle:
         fetcher = _FakeFetcher(FACT)
         self._run(screenshots_dir, metadata_path, tmp_path, fetcher)
         assert fetcher.budgets and 0 < fetcher.budgets[0] <= 180
+
+    def test_a_junk_only_library_skips_the_cycle(
+        self, screenshots_dir: Path, metadata_path: Path, tmp_path: Path
+    ) -> None:
+        """Nothing usable to post is a skipped cycle, not a junk post."""
+
+        class _RejectEverything:
+            def assess(self, _path: Path) -> FrameAssessment:
+                return FrameAssessment(usable=False, faces=0, reason="near-black")
+
+        client, history = self._run(
+            screenshots_dir, metadata_path, tmp_path, None, _RejectEverything()
+        )
+        assert client.captions == []
+        assert history.get_stats()["total_posts"] == 0
+
+    def test_prefers_a_frame_with_a_face(
+        self, screenshots_dir: Path, metadata_path: Path, tmp_path: Path
+    ) -> None:
+        """Faceless draws are passed over while the budget allows."""
+
+        class _FaceOnThirdLook:
+            def __init__(self) -> None:
+                self.seen: list[str] = []
+
+            def assess(self, path: Path) -> FrameAssessment:
+                self.seen.append(path.name)
+                return FrameAssessment(usable=True, faces=int(len(self.seen) == 3))
+
+        scorer = _FaceOnThirdLook()
+        client, history = self._run(
+            screenshots_dir, metadata_path, tmp_path, None, scorer
+        )
+        assert len(client.captions) == 1
+        assert len(scorer.seen) == 3
+        assert history._data["posted"][-1]["frame_filename"] == scorer.seen[2]
 
     def test_temp_file_is_cleaned_up(
         self, screenshots_dir: Path, metadata_path: Path, tmp_path: Path

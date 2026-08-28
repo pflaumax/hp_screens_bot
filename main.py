@@ -16,6 +16,8 @@ from config import load_config
 from bot.bluesky_client import BlueskyClient, PostingError
 from bot.caption_generator import fact_budget, generate as generate_caption
 from bot.fact_fetcher import Fact, FactFetcher
+from bot.frame_quality import FrameScorer
+from bot.frame_selector import select_frame
 from bot.image_processor import ImageProcessor, ImageProcessingError
 from bot.movie_library import MovieLibrary, FrameResult
 from bot.scheduler import BotScheduler
@@ -120,9 +122,6 @@ class PostHistory:
         return self._data["stats"]
 
 
-MAX_DUPLICATE_RETRIES = 3
-
-
 def post_random_frame(
     movie_library: MovieLibrary,
     image_processor: ImageProcessor,
@@ -131,6 +130,8 @@ def post_random_frame(
     temp_dir: Path,
     fact_fetcher: FactFetcher | None = None,
     max_fact_length: int = 180,
+    frame_scorer: FrameScorer | None = None,
+    frame_candidates: int = 3,
 ) -> None:
     """Execute one full post cycle.
 
@@ -140,32 +141,24 @@ def post_random_frame(
     """
     processed_path: Path | None = None
     try:
-        # Pick a frame, retrying if it was already posted
-        frame_result: FrameResult | None = None
-        for attempt in range(1, MAX_DUPLICATE_RETRIES + 1):
-            candidate = movie_library.get_random_frame()
-            if not post_history.is_posted(candidate.frame_filename):
-                frame_result = candidate
-                break
-            logger.info(
-                "[Part %d] Frame %s already posted, retrying (%d/%d)...",
-                candidate.movie.part,
-                candidate.frame_filename,
-                attempt,
-                MAX_DUPLICATE_RETRIES,
-            )
+        # Pick an unposted frame, preferring one with a face in it
+        selection = select_frame(
+            movie_library=movie_library,
+            is_posted=post_history.is_posted,
+            scorer=frame_scorer,
+            preferred_attempts=frame_candidates,
+        )
+        if selection is None:
+            # Every draw was unreadable or a fade. Skipping beats posting junk.
+            logger.error("No usable frame this cycle — skipping.")
+            return
 
-        if frame_result is None:
-            # Extremely unlikely with 6000+ frames, but use last candidate
-            frame_result = candidate  # type: ignore[assignment]
-            logger.warning(
-                "Could not find unposted frame after %d attempts, "
-                "proceeding with %s",
-                MAX_DUPLICATE_RETRIES,
-                frame_result.frame_filename,
-            )
-
+        frame_result = selection.frame
         movie = frame_result.movie
+        logger.info(
+            "[Part %d] Selected %s — %s",
+            movie.part, frame_result.frame_filename, selection.describe(),
+        )
 
         # Resize and compress
         temp_dir.mkdir(parents=True, exist_ok=True)
@@ -243,6 +236,17 @@ def main() -> None:
     post_history = PostHistory(cfg.data_dir / "posted_frames.json")
     temp_dir = Path("temp/")
 
+    frame_scorer: FrameScorer | None = None
+    if cfg.frame_quality_enabled:
+        frame_scorer = FrameScorer()
+        logger.info(
+            "Frame quality on (%d candidates, face detection %s).",
+            cfg.frame_candidates,
+            "available" if frame_scorer.face_detection_available else "OFF",
+        )
+    else:
+        logger.info("Frame quality off — posting any frame.")
+
     fact_fetcher: FactFetcher | None = None
     if cfg.facts_enabled:
         fact_fetcher = FactFetcher(cfg.data_dir / "cache")
@@ -280,6 +284,8 @@ def main() -> None:
             temp_dir=temp_dir,
             fact_fetcher=fact_fetcher,
             max_fact_length=cfg.max_fact_length,
+            frame_scorer=frame_scorer,
+            frame_candidates=cfg.frame_candidates,
         )
 
     # Run one post immediately on startup

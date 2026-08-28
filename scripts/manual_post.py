@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import load_config
 from bot.bluesky_client import BlueskyClient
 from bot.fact_fetcher import FactFetcher
+from bot.frame_quality import FrameScorer
 from bot.image_processor import ImageProcessor
 from bot.movie_library import MovieLibrary
 from bot.utils import setup_logging
@@ -35,6 +36,7 @@ def main() -> None:
     fact_fetcher = (
         FactFetcher(cfg.data_dir / "cache") if cfg.facts_enabled else None
     )
+    frame_scorer = FrameScorer() if cfg.frame_quality_enabled else None
 
     bluesky_client = BlueskyClient(cfg.bluesky_username, cfg.bluesky_password)
     bluesky_client.login()
@@ -48,6 +50,8 @@ def main() -> None:
         temp_dir=Path("temp/"),
         fact_fetcher=fact_fetcher,
         max_fact_length=cfg.max_fact_length,
+        frame_scorer=frame_scorer,
+        frame_candidates=cfg.frame_candidates,
     )
     print("Done.")
 

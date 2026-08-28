@@ -34,6 +34,10 @@ class Config:
     facts_enabled: bool = True
     max_fact_length: int = 180
 
+    # Frame quality
+    frame_quality_enabled: bool = True
+    frame_candidates: int = 3
+
     # Logging
     log_level: str = "INFO"
 
@@ -67,5 +71,10 @@ def load_config() -> Config:
         facts_enabled=os.getenv("FACTS_ENABLED", "true").strip().lower()
         not in ("0", "false", "no"),
         max_fact_length=int(os.getenv("MAX_FACT_LENGTH", "180")),
+        frame_quality_enabled=os.getenv("FRAME_QUALITY_ENABLED", "true")
+        .strip()
+        .lower()
+        not in ("0", "false", "no"),
+        frame_candidates=int(os.getenv("FRAME_CANDIDATES", "3")),
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )

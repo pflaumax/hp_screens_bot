@@ -10,7 +10,8 @@ ledger, and one post format.
 ## How It Works
 
 1. Picks a random Harry Potter movie from pre-downloaded screenshot folders
-2. Selects a random screenshot JPEG from that movie's folder
+2. Draws candidate JPEGs, skipping broken and near-black frames and
+   preferring one with a face in it
 3. Resizes, centre-crops to 1:1, and compresses to meet Bluesky's image limits
 4. Looks up a short fact from the [Potter DB API](https://potterdb.com/)
 5. Posts the fact above the film title, with a single #HarryPotter tag
@@ -27,6 +28,27 @@ Harry Potter and the Deathly Hallows – Part 2
 The fact is decoration, not a dependency: if Potter DB is unreachable the
 screengrab still goes out with just the title. Facts are deliberately plain —
 no emoji, no extra hashtags, one sentence.
+
+### A note on frame quality
+
+The screenshot library is a fixed-interval sample of each film, so a
+sizeable share of it is fades to black, motion blur, corrupt files, and
+close-ups of texture. Two filters apply:
+
+- **Always skipped**: unreadable JPEGs (~0.3% of the library) and
+  near-black frames.
+- **Preferred**: frames with a detectable face. About 65% of the library
+  has one, spread evenly across all eight films.
+
+Faces are preferred rather than required. At `FRAME_CANDIDATES=3` roughly
+96% of posts show a character while atmospheric wide shots still get
+through. Raise it to make the feed stricter, or set
+`FRAME_QUALITY_ENABLED=false` to turn all of this off.
+
+Brightness and contrast are deliberately *not* used to judge interest.
+Measured against the real library the films are shot so dark that a
+close-up of Harry's face and a close-up of a mosaic floor fall in the
+same bands — see `scripts/calibrate_quality.py`.
 
 ### A note on the facts
 
@@ -96,12 +118,15 @@ All settings are in `.env`:
 | `INTERVAL_MINUTES` | `30` | Minutes between posts |
 | `FACTS_ENABLED` | `true` | Set to `false` to post the title only |
 | `MAX_FACT_LENGTH` | `180` | Character cap on the fact line |
+| `FRAME_QUALITY_ENABLED` | `true` | Set to `false` to post any frame |
+| `FRAME_CANDIDATES` | `3` | Frames inspected while looking for a face |
 | `LOG_LEVEL` | `INFO` | Logging verbosity |
 
 ## Scripts
 
 ```bash
-python scripts/preview_facts.py 20  # Print sample captions, post nothing
+python scripts/preview_facts.py 20     # Print sample captions, post nothing
+python scripts/calibrate_quality.py 500 # Measure the frame filter, post nothing
 python scripts/manual_post.py       # Post once immediately
 python scripts/test_extraction.py   # Process a frame without posting
 python scripts/stats.py             # View posting statistics

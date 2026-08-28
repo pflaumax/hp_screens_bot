@@ -13,11 +13,12 @@ This repo absorbed a second project, `../hp_facts_bot`, which was configured for
 The venv is `.venv/` and was created before the project moved under `pi-services/`, so `.venv/bin/pip` has a stale shebang and fails. Use `.venv/bin/python -m pip` instead, or recreate the venv. (The README's `venv/` refers to the Pi deploy.)
 
 ```bash
-.venv/bin/python -m pytest tests/ -q          # full suite (111 tests, all passing)
+.venv/bin/python -m pytest tests/ -q          # full suite (133 tests, all passing)
 .venv/bin/python -m pytest tests/test_fact_fetcher.py::TestQualityFilters -v   # one class
 .venv/bin/python main.py                      # run the bot (posts immediately, then every INTERVAL_MINUTES)
 
 .venv/bin/python scripts/preview_facts.py 20  # print sample captions, post nothing
+.venv/bin/python scripts/calibrate_quality.py 500  # measure the frame filter
 .venv/bin/python scripts/test_extraction.py   # dry run: pick + process a frame
 .venv/bin/python scripts/manual_post.py       # one real post to Bluesky
 .venv/bin/python scripts/stats.py             # read data/posted_frames.json
@@ -32,6 +33,8 @@ There is no pyproject/pytest.ini/mypy config — always run from the repo root s
 `main.py` wires everything and owns the post cycle. Components are passed as explicit arguments (no module globals), so every call site — `main.main()` and `scripts/manual_post.py` — must be updated together when the signature of `post_random_frame()` changes.
 
 - **`config.py`** — frozen `Config` dataclass loaded from `.env`. `load_config()` calls `sys.exit(1)` if Bluesky credentials are missing.
+- **`bot/frame_quality.py`** — `FrameScorer.assess()`: Pillow exposure guards, then OpenCV YuNet face detection. OpenCV and the model are both optional; either missing degrades to the guards alone.
+- **`bot/frame_selector.py`** — draws candidates, skips unusable ones, prefers a face, falls back to the best seen. Returns None when nothing is usable, and the cycle is skipped.
 - **`bot/movie_library.py`** — reads `data/movie_metadata.json` and globs `SCREENSHOTS_DIR/<folder_name>/*.jpg` **once at construction**. Adding screenshots on disk requires a restart. Missing/empty folders log a warning and are skipped.
 - **`bot/image_processor.py`** — centre-crops to 1:1 when aspect > 1.2, resizes longest side to ≤1000px, then steps JPEG quality 95→15 until under 950KB.
 - **`bot/fact_fetcher.py`** — Potter DB client: paginated fetch, disk cache, quality gates, weighted draw. Returns a formatted `Fact` or `None`.
@@ -42,7 +45,7 @@ There is no pyproject/pytest.ini/mypy config — always run from the repo root s
 
 ### Post cycle invariants
 
-`post_random_frame()` must never raise — the scheduler thread would die. It wraps everything in a bare `except Exception` and cleans up the temp file in `finally`. Its degradation ladder: up to 3 re-picks if the frame is in recent history → fact lookup (best effort, `None` on any failure) → image post with 3 exponential-backoff retries → text-only post → give up and log. **A Potter DB outage must never cost a post**; `FactFetcher.get_random_fact()` swallows everything and returns `None`, and `tests/test_post_history.py` pins that.
+`post_random_frame()` must never raise — the scheduler thread would die. It wraps everything in a bare `except Exception` and cleans up the temp file in `finally`. Its degradation ladder: frame selection (skips unusable, prefers a face; `None` skips the cycle) → fact lookup (best effort, `None` on any failure) → image post with 3 exponential-backoff retries → text-only post → give up and log. **A Potter DB outage must never cost a post**; `FactFetcher.get_random_fact()` swallows everything and returns `None`, and `tests/test_post_history.py` pins that.
 
 ### Caption shape
 
@@ -79,6 +82,19 @@ Character phrasings are **weighted**, not uniform: boggart/Patronus/Animagus at 
 - `posted_fact_ids` — an **unbounded** list, deliberately outside the ring buffer so the fact pool doesn't recycle merely because the frame log rolled over. Files written before facts existed lack this key; `posted_fact_ids()` and `add()` both tolerate that.
 
 Fact IDs are `f"{content_type}_{slug}"`. Changing that format silently invalidates the whole fact history. When every quality fact has been posted, `FactFetcher` recycles rather than returning nothing — at 48 posts/day the pool is expected to wrap around, and this is the intended behaviour, not a bug.
+
+### Frame quality, and what does not work
+
+The library is a fixed-interval sample of each film, so it is full of fades, blur, and texture close-ups. Two things were established by measuring, not guessing — rerun `scripts/calibrate_quality.py` before touching any of it:
+
+- **Luminance statistics cannot judge whether a frame is interesting.** The films are shot dark: library brightness has a median of 28 and p5 of 9.2, and legitimate close-ups of faces measure 14-15. A user-reported bad frame (a close-up of a mosaic floor) measured brightness 36 / contrast 11 — squarely among *good* dark frames at the same percentiles. Grid-based composition metrics failed the same way. Do not reintroduce a "contrast threshold"; it rejects cinematography, not junk.
+- **Face detection does separate them**, at ~16 ms per frame on the Pi. YuNet finds a face in ~65% of the library, evenly across all eight films (52-77%), and correctly rejected the reported bad frame while accepting very dark shots of Harry at 0.9+ confidence.
+
+The exposure guards that remain are only for frames that are *never* postable: unreadable files (~0.3% of the library — these used to cost a whole post cycle) and near-black fades (brightness < 10 or contrast < 6).
+
+Faces are preferred, not required: a wide shot of the castle is a legitimate screengrab that YuNet cannot see a face in. `FRAME_CANDIDATES` (default 3) is the knob — the chance of a faceless post is roughly `0.35 ** FRAME_CANDIDATES`.
+
+The model is vendored at `models/face_detection_yunet_2023mar.onnx` (227 KB) so deployment needs no download. `opencv-python-headless` installs on the Pi in about 8 seconds; note OpenCV 5 dropped `CascadeClassifier` and the bundled Haar cascades, so `FaceDetectorYN` is the path.
 
 ### Metadata is the source of truth
 
